@@ -2142,7 +2142,7 @@
                         ご登録ありがとうございます。<br>正式リリース時に優先してご案内いたします。</p>
                 </div>
 
-                <form class="entry-form" onsubmit="handleEntrySubmit(event)"
+                <form id="entryForm" class="entry-form" onsubmit="handleEntrySubmit(event)"
                     style="background: rgba(255,255,255,0.05); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); position: relative;">
 
                     <!-- Honeypot (Spam Protection) -->
@@ -2215,10 +2215,10 @@
         </div>
 
         <script>
-            // Utility for extracting UTM parameters
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbywpFa6k8kw5zCr4EBT7WBk09Q0BGPOf-YUWJZzW_M2Z-fpf3KGDAmszVaOUtrnbsbY/exec";
+
             function getUTM(param) {
-                const urlParams = new URLSearchParams(window.location.search);
-                return urlParams.get(param) || "";
+                return new URLSearchParams(window.location.search).get(param) || "";
             }
 
             async function handleEntrySubmit(e) {
@@ -2226,51 +2226,63 @@
                 const form = e.target;
                 const button = form.querySelector('button[type="submit"]');
 
-                // Prevent Double Submission
+                // 二重送信防止
                 if (button.disabled) return;
 
-                // 1. Gather Form Data
-                const email = form.querySelector('input[type="email"]').value;
-                const company_name = form.querySelector('input[type="text"]').value;
+                // フォームデータ収集
+                const email = form.querySelector('input[type="email"]').value.trim();
+                const company_name = form.querySelector('input[type="text"]').value.trim();
                 const web_owner_status = form.querySelector('select').value;
                 const website_url = form.querySelector('input[name="website_url"]').value;
 
-                // 2. Strict Email Validation
+                // メール形式バリデーション
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(email)) {
                     alert("有効なメールアドレスを入力してください。");
                     return;
                 }
 
-                // Prepare for submission
+                // 3秒未満の連続送信を拒否
+                const lastSubmit = parseInt(localStorage.getItem('mihari_last_submit') || '0');
+                const now = Date.now();
+                if (now - lastSubmit < 3000) {
+                    alert("少し時間をあけて再度送信してください。");
+                    return;
+                }
+
+                // ローディング表示
                 const originalBtnText = button.innerHTML;
                 button.disabled = true;
-                button.innerHTML = '送信中...';
+                button.innerHTML = '<span style="opacity:0.7;">送信中...</span>';
 
                 try {
                     const payload = {
-                        company_name: company_name,
-                        email: email,
-                        web_owner_status: web_owner_status,
-                        website_url: website_url, // Honeypot Field
+                        company_name,
+                        email,
+                        web_owner_status,
+                        website_url,
                         source: document.referrer || "direct",
                         utm_campaign: getUTM('utm_campaign'),
                         utm_source: getUTM('utm_source'),
                         utm_medium: getUTM('utm_medium')
                     };
 
-                    // 3. POST to Google Apps Script
-                    const response = await fetch("<<GAS_WEBAPP_URL>>", {
+                    // no-cors: GASへのCORSエラーなしPOST
+                    await fetch(GAS_URL, {
                         method: "POST",
-                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        headers: { "Content-Type": "application/json" },
+                        mode: "no-cors",
                         body: JSON.stringify(payload)
                     });
 
-                    // 4. Redirect to Thanks Page for Conversion Tracking
-                    window.location.href = '/entry/thanks/';
+                    // 送信タイムスタンプ保存
+                    localStorage.setItem('mihari_last_submit', String(Date.now()));
+
+                    // サンクスページへリダイレクト
+                    window.location.href = '/entry/thanks';
 
                 } catch (error) {
-                    console.error("Submission failed", error);
+                    console.error("送信エラー", error);
                     alert("送信に失敗しました。通信環境をご確認の上、再度お試しください。");
                     button.disabled = false;
                     button.innerHTML = originalBtnText;
