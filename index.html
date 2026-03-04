@@ -2592,7 +2592,7 @@
         </div>
 
         <script>
-            const GAS_URL = "https://script.google.com/macros/s/AKfycbywpFa6k8kw5zCr4EBT7WBk09Q0BGPOf-YUWJZzW_M2Z-fpf3KGDAmszVaOUtrnbsbY/exec";
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbyk8t9tAOTqPT-nt2B5m9fg6QgBvOodVKJOr0jIw-voiwaycdm5DQsIWVZtzsoLEagD/exec";
 
             function getUTM(param) {
                 return new URLSearchParams(window.location.search).get(param) || "";
@@ -2633,7 +2633,7 @@
                 button.innerHTML = '<span style="opacity:0.7;">送信中...</span>';
 
                 try {
-                    const payload = {
+                    const payload = new URLSearchParams({
                         company_name,
                         email,
                         web_owner_status,
@@ -2642,14 +2642,13 @@
                         utm_campaign: getUTM('utm_campaign'),
                         utm_source: getUTM('utm_source'),
                         utm_medium: getUTM('utm_medium')
-                    };
+                    });
 
-                    // no-cors: GASへのCORSエラーなしPOST
+                    // no-cors を指定してCORSエラーを回避し、フォームデータとしてGASへ送信
                     await fetch(GAS_URL, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
                         mode: "no-cors",
-                        body: JSON.stringify(payload)
+                        body: payload
                     });
 
                     // 送信タイムスタンプ保存
