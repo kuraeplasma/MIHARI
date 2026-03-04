@@ -2,6 +2,14 @@
 <html lang="ja">
 
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGGNJDGKR7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-DGGNJDGKR7');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIHARI – 放置されたWebは毎日売上を失っています</title>
@@ -2278,6 +2286,14 @@
                     // 送信タイムスタンプ保存
                     localStorage.setItem('mihari_last_submit', String(Date.now()));
 
+                    // GA4: エントリー送信イベント（送信成功時のみ発火）
+                    if (typeof gtag === 'function') {
+                        gtag('event', 'entry_submit', {
+                            event_category: 'conversion',
+                            event_label: 'entry_form'
+                        });
+                    }
+
                     // サンクスページへリダイレクト
                     window.location.href = '/entry/thanks';
 
@@ -2304,10 +2320,14 @@
 
             <p
                 style="margin-bottom: 32px; font-size: 1.1rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 24px;">
-                <a href='/privacy' style='color:#fff !important; text-decoration:underline !important; font-weight: 700;'>プライバシーポリシー</a>
-                <a href='/terms' style='color:#fff !important; text-decoration:underline !important; font-weight: 700;'>利用規約</a>
-                <a href='/law' style='color:#fff !important; text-decoration:underline !important; font-weight: 700;'>特商法表記</a>
-                <a href='/company' style='color:#fff !important; text-decoration:underline !important; font-weight: 700;'>運営会社</a>
+                <a href='/privacy'
+                    style='color:#fff !important; text-decoration:underline !important; font-weight: 700;'>プライバシーポリシー</a>
+                <a href='/terms'
+                    style='color:#fff !important; text-decoration:underline !important; font-weight: 700;'>利用規約</a>
+                <a href='/law'
+                    style='color:#fff !important; text-decoration:underline !important; font-weight: 700;'>特商法表記</a>
+                <a href='/company'
+                    style='color:#fff !important; text-decoration:underline !important; font-weight: 700;'>運営会社</a>
             </p>
 
             <p style="color: rgba(255,255,255,0.3); font-size: 0.85rem;">© 2026 MIHARI · Operated by SpaceGleam Inc.</p>
