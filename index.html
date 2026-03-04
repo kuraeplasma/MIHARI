@@ -14,6 +14,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIHARI – 放置されたWebは毎日売上を失っています</title>
     <meta name="description" content="MIHARIはAI Web監査社員。現在、正式リリースに向けて開発中。エントリーいただいた企業様には、優先的にご案内と先行特典を提供いたします。">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+    <!-- OGP -->
+    <meta property="og:title" content="MIHARI – AI Web Auditor">
+    <meta property="og:description" content="Webの不具合は、静かに売上を削ります。AI Web監査社員「MIHARI」開発進行中。">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="ogp_image.png">
+    <meta name="twitter:card" content="summary_large_image">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
         href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@400;500;600;700&display=swap"
@@ -90,7 +102,15 @@
             font-size: 1.4rem;
             color: var(--emerald);
             letter-spacing: 3px;
-            text-decoration: none
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo img {
+            height: 1.4rem;
+            width: auto;
         }
 
         .logo span {
@@ -2043,7 +2063,7 @@
     <!-- HEADER -->
     <header>
         <div class="h-inner">
-            <a href="#" class="logo">MIHARI</a>
+            <a href="#" class="logo"><img src="logo_transparent.png" alt="MIHARI Logo">MIHARI</a>
             <a href="#entry-form" class="h-cta">先行エントリー</a>
         </div>
     </header>
