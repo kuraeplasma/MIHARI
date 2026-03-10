@@ -1,0 +1,18 @@
+{
+  "name": "mihari",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "web",
+    "services/dispatcher",
+    "services/worker"
+  ],
+  "scripts": {
+    "dev:web": "npm --prefix web run dev",
+    "dev:dispatcher": "npm --prefix services/dispatcher run dev",
+    "dev:worker": "npm --prefix services/worker run dev",
+    "build:web": "npm --prefix web run build",
+    "build:dispatcher": "npm --prefix services/dispatcher run build",
+    "build:worker": "npm --prefix services/worker run build"
+  }
+}
