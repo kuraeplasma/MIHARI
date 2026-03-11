@@ -1,5 +1,6 @@
 import { DecodedIdToken } from "firebase-admin/auth";
 import { adminDb } from "@/lib/firebase-admin";
+import { normalizePlanName } from "@/lib/plans";
 import { nowIso } from "@/lib/time";
 import { UserDoc } from "@/types/domain";
 
@@ -30,7 +31,7 @@ function withLocalUnlimitedPlan(user: UserDoc): UserDoc {
   }
 
   // Local testing only: remove plan-based caps and feature restrictions.
-  return { ...user, plan: "agency" };
+  return { ...user, plan: "enterprise" };
 }
 
 export async function getOrCreateUser(decoded: DecodedIdToken): Promise<UserDoc> {
@@ -38,13 +39,19 @@ export async function getOrCreateUser(decoded: DecodedIdToken): Promise<UserDoc>
   const snapshot = await userRef.get();
 
   if (snapshot.exists) {
-    return withLocalUnlimitedPlan(snapshot.data() as UserDoc);
+    const user = snapshot.data() as UserDoc;
+    const normalizedPlan = normalizePlanName(user.plan);
+    if (user.plan !== normalizedPlan) {
+      user.plan = normalizedPlan;
+      await userRef.update({ plan: normalizedPlan });
+    }
+    return withLocalUnlimitedPlan(user);
   }
 
   const user: UserDoc = {
     userId: decoded.uid,
     email: decoded.email ?? "",
-    plan: "free",
+    plan: "starter",
     createdAt: nowIso()
   };
   await userRef.set(user);

@@ -1,4 +1,4 @@
-export type PlanName = "free" | "pro" | "agency";
+export type PlanName = "starter" | "pro" | "business" | "enterprise";
 
 export type SiteStatus = "healthy" | "degraded" | "down" | "pending";
 
@@ -6,6 +6,24 @@ export interface UserDoc {
   userId: string;
   email: string;
   plan: PlanName;
+  displayName?: string;
+  workspaceName?: string;
+  settings?: {
+    monitoring: {
+      interval: "5m" | "15m" | "1h" | "6h" | "24h";
+      algorithm: "dom" | "text" | "html";
+    };
+    notifications: {
+      emailEnabled: boolean;
+      slackEnabled: boolean;
+      slackWebhookUrl?: string;
+      notifyOn: "all" | "errors" | "critical";
+    };
+    ai: {
+      autoAnalyze: boolean;
+      scope: "full" | "summary";
+    };
+  };
   createdAt: string;
 }
 

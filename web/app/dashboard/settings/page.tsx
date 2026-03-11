@@ -2,104 +2,70 @@
 
 import { useEffect, useState } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { SettingsPage } from "@/components/settings-page";
 import { useAuth } from "@/components/auth-provider";
 import { PlanName } from "@/types/domain";
+import { PLANS } from "@/lib/plans";
 
 interface MeResponse {
   userId: string;
   email: string;
   plan: PlanName;
+  displayName?: string;
+  workspaceName?: string;
+  settings?: any; // To avoid type bloat here, just pass the object
   createdAt: string;
 }
 
-export default function SettingsPage() {
-  const { apiFetch, token } = useAuth();
+function aiMaxForPlan(plan: PlanName): number {
+  if (plan === "starter") return 30;
+  if (plan === "pro") return 200;
+  if (plan === "business") return 800;
+  return Number.MAX_SAFE_INTEGER;
+}
+
+export default function SettingsRoute() {
+  const { apiFetch, token, user } = useAuth();
   const [me, setMe] = useState<MeResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
-      return;
-    }
-
+    if (!token) return;
     const load = async () => {
       try {
-        setLoading(true);
-        setError(null);
         const res = await apiFetch("/api/me");
-        if (!res.ok) {
-          const json = await res.json();
-          throw new Error(json.error ?? "Failed to load account");
-        }
-        setMe((await res.json()) as MeResponse);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Unknown error");
-      } finally {
-        setLoading(false);
-      }
+        if (res.ok) setMe((await res.json()) as MeResponse);
+      } catch { /* silent */ }
     };
-
     void load();
   }, [apiFetch, token]);
 
   return (
     <DashboardShell>
-      <section className="panel">
-        <div className="section-head-copy">
-          <h3>設定</h3>
-          <p className="tiny-copy">アカウント情報と監視プランの運用前提を確認できます。</p>
+      <div className="dashboard-main-padding">
+        <div className="page-header">
+          <div>
+            <span className="page-eyebrow">Preferences</span>
+            <h2 className="page-title">設定</h2>
+            <p className="page-subtitle">
+              アカウント・ワークスペース・監視・通知・AI・プランを管理します。
+            </p>
+          </div>
         </div>
-      </section>
 
-      {loading && <p>Loading settings...</p>}
-      {error && <p className="error-text">{error}</p>}
-
-      {me && (
-        <section className="settings-grid">
-          <article className="panel">
-            <div className="section-head-copy">
-              <h3>アカウント</h3>
-              <p className="tiny-copy">ログイン中ユーザーの基本情報です。</p>
-            </div>
-            <div className="card-list">
-              <div className="overview-card-row">
-                <span>メールアドレス</span>
-                <strong>{me.email}</strong>
-              </div>
-              <div className="overview-card-row">
-                <span>プラン</span>
-                <strong>{me.plan}</strong>
-              </div>
-              <div className="overview-card-row">
-                <span>登録日</span>
-                <strong>{new Date(me.createdAt).toLocaleString()}</strong>
-              </div>
-            </div>
-          </article>
-
-          <article className="panel">
-            <div className="section-head-copy">
-              <h3>監視ポリシー</h3>
-              <p className="tiny-copy">現在のプランに応じた監視仕様です。</p>
-            </div>
-            <div className="card-list">
-              <div className="overview-card-row">
-                <span>監視間隔</span>
-                <strong>プラン設定に準拠</strong>
-              </div>
-              <div className="overview-card-row">
-                <span>フォーム監視 / AI分析</span>
-                <strong>{me.plan === "free" ? "一部制限あり" : "利用可能"}</strong>
-              </div>
-              <div className="overview-card-row">
-                <span>データ管理</span>
-                <strong>Firestore ベース</strong>
-              </div>
-            </div>
-          </article>
-        </section>
-      )}
+        <SettingsPage
+          me={me ? {
+            displayName: me.displayName || user?.displayName || me.email.split("@")[0],
+            email: me.email,
+            plan: me.plan,
+            workspaceName: me.workspaceName,
+            settings: me.settings,
+            sitesUsed: 3, // TODO: Wire these to actual usage counts
+            sitesMax: PLANS[me.plan || "starter"]?.maxSites ?? 3,
+            aiUsed: 15,
+            aiMax: aiMaxForPlan(me.plan ?? "starter"),
+          } : null}
+        />
+      </div>
     </DashboardShell>
   );
 }

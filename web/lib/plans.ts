@@ -9,24 +9,31 @@ export interface PlanConfig {
 }
 
 export const PLANS: Record<PlanName, PlanConfig> = {
-  free: {
-    name: "free",
-    maxSites: 1,
-    intervalMinutes: 24 * 60,
-    formMonitoring: false,
-    aiAnalysis: false
-  },
-  pro: {
-    name: "pro",
-    maxSites: 10,
-    intervalMinutes: 60,
+  starter: {
+    name: "starter",
+    maxSites: 3,
+    intervalMinutes: 1,
     formMonitoring: true,
     aiAnalysis: true
   },
-  agency: {
-    name: "agency",
-    maxSites: 100,
-    intervalMinutes: 10,
+  pro: {
+    name: "pro",
+    maxSites: 15,
+    intervalMinutes: 1,
+    formMonitoring: true,
+    aiAnalysis: true
+  },
+  business: {
+    name: "business",
+    maxSites: 40,
+    intervalMinutes: 0.5,
+    formMonitoring: true,
+    aiAnalysis: true
+  },
+  enterprise: {
+    name: "enterprise",
+    maxSites: Number.MAX_SAFE_INTEGER,
+    intervalMinutes: 0.5,
     formMonitoring: true,
     aiAnalysis: true
   }
@@ -34,4 +41,13 @@ export const PLANS: Record<PlanName, PlanConfig> = {
 
 export function intervalMinutesForPlan(plan: PlanName): number {
   return PLANS[plan].intervalMinutes;
+}
+
+export function normalizePlanName(plan: string | undefined | null): PlanName {
+  if (plan === "starter" || plan === "pro" || plan === "business" || plan === "enterprise") {
+    return plan;
+  }
+  if (plan === "free") return "starter";
+  if (plan === "agency") return "business";
+  return "starter";
 }
