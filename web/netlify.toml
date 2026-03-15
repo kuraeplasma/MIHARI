@@ -1,8 +1,9 @@
 [build]
-  command = "node scripts/netlify-build-web.cjs"
+  command = "npm run build"
 
 [functions]
   external_node_modules = ["next"]
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
