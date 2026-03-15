@@ -1,5 +1,5 @@
 [build]
-  command = "node -e \"const { execSync } = require('child_process'); const { existsSync } = require('fs'); const cmd = existsSync('web/package.json') ? 'npm --prefix web run build' : 'npm run build'; execSync(cmd, { stdio: 'inherit' });\""
+  command = "node scripts/netlify-build-web.cjs"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
