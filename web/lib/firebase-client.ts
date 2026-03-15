@@ -11,19 +11,19 @@ const firebaseConfig = {
 
 let cached:
   | {
-      app: FirebaseApp;
-      auth: Auth;
-      googleProvider: GoogleAuthProvider;
-    }
+    app: FirebaseApp;
+    auth: Auth;
+    googleProvider: GoogleAuthProvider;
+  }
   | null = null;
 
 function hasFirebaseConfig() {
   return Boolean(
     firebaseConfig.apiKey &&
-      firebaseConfig.authDomain &&
-      firebaseConfig.projectId &&
-      firebaseConfig.appId &&
-      firebaseConfig.messagingSenderId
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.appId &&
+    firebaseConfig.messagingSenderId
   );
 }
 
@@ -33,7 +33,9 @@ export function getFirebaseClient() {
   }
 
   if (!hasFirebaseConfig()) {
-    throw new Error("Missing NEXT_PUBLIC Firebase config values.");
+    console.warn("Firebase configuration is missing. Dashboard authentication will not function.");
+    // Return a dummy object or handle upstream to prevent crashes
+    throw new Error("AUTH_CONFIG_MISSING");
   }
 
   const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);

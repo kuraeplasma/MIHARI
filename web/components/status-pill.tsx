@@ -1,13 +1,13 @@
 import { SiteStatus } from "@/types/domain";
 
-const labels: Record<SiteStatus, string> = {
-  healthy: "正常",
-  degraded: "警告",
-  down: "エラー",
-  pending: "警告"
+const config: Record<SiteStatus, { label: string; cls: string }> = {
+  healthy: { label: "正常", cls: "healthy" },
+  degraded: { label: "警告", cls: "degraded" },
+  down: { label: "エラー", cls: "down" },
+  pending: { label: "確認中", cls: "pending" },
 };
 
-export function StatusPill({ status }: { status: SiteStatus }) {
-  const colorClass = status === "healthy" ? "healthy" : status === "down" ? "error" : "warning";
-  return <span className={`status-pill ${colorClass}`}>{labels[status]}</span>;
+export function StatusPill({ status }: { status: SiteStatus | string }) {
+  const c = config[status as SiteStatus] ?? { label: status, cls: "pending" };
+  return <span className={`status-pill ${c.cls}`}>{c.label}</span>;
 }

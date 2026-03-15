@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-guard";
 import { adminDb } from "@/lib/firebase-admin";
+import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -35,8 +36,18 @@ async function deleteCollectionBySiteId(collectionName: string, siteId: string) 
 }
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
+  const limited = await enforceRateLimit(req, "api:sites-siteid:get");
+  if (limited) {
+    return limited;
+  }
+
+  const auth = await requireAuth(req);
+  if (auth.error) {
+    return auth.error;
+  }
+
   try {
-    const decoded = await requireAuth(req);
+    const decoded = auth.user;
     const siteRef = adminDb.collection("sites").doc(params.siteId);
     const siteSnap = await siteRef.get();
     if (!siteSnap.exists) {
@@ -84,8 +95,18 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  const limited = await enforceRateLimit(req, "api:sites-siteid:delete");
+  if (limited) {
+    return limited;
+  }
+
+  const auth = await requireAuth(req);
+  if (auth.error) {
+    return auth.error;
+  }
+
   try {
-    const decoded = await requireAuth(req);
+    const decoded = auth.user;
     const siteRef = adminDb.collection("sites").doc(params.siteId);
     const siteSnap = await siteRef.get();
     if (!siteSnap.exists) {

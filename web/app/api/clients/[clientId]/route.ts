@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-guard";
 import { adminDb } from "@/lib/firebase-admin";
+import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -11,8 +12,18 @@ interface RouteParams {
 }
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
+  const limited = await enforceRateLimit(req, "api:clients-clientid:get");
+  if (limited) {
+    return limited;
+  }
+
+  const auth = await requireAuth(req);
+  if (auth.error) {
+    return auth.error;
+  }
+
   try {
-    const decoded = await requireAuth(req);
+    const decoded = auth.user;
     const clientRef = adminDb.collection("clients").doc(params.clientId);
     const clientSnap = await clientRef.get();
     if (!clientSnap.exists) {

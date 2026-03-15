@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import "@/app/globals.css";
 import { AuthProvider } from "@/components/auth-provider";
+import { AppPopupProvider } from "@/components/app-popup-provider";
 
 const headingFont = Space_Grotesk({
   subsets: ["latin"],
@@ -23,7 +24,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ja">
       <body className={`${headingFont.variable} ${monoFont.variable}`}>
-        <AuthProvider>{children}</AuthProvider>
+        <AppPopupProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </AppPopupProvider>
       </body>
     </html>
   );

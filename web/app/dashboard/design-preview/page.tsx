@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { DashboardShell } from "@/components/dashboard-shell";
 
 export default function DesignPreviewPage() {
     const variations = [
@@ -32,7 +31,7 @@ export default function DesignPreviewPage() {
     ];
 
     return (
-        <DashboardShell>
+        <>
             <div className="dashboard-main-padding" style={{ maxWidth: "1200px" }}>
                 <header style={{ marginBottom: "2rem" }}>
                     <h1 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.5rem" }}>ヒーローカード デザインプレビュー</h1>
@@ -94,13 +93,13 @@ export default function DesignPreviewPage() {
                                             gap: "0.875rem",
                                             flexShrink: 0
                                         }}>
-                                            <Link href="#" className="btn monitor-btn monitor-btn-primary" style={{
+                                            <Link href="/dashboard/sites" className="btn monitor-btn monitor-btn-primary" style={{
                                                 padding: "0.75rem 1.75rem",
                                                 borderRadius: "6px"
                                             }}>
                                                 監視一覧へ
                                             </Link>
-                                            <Link href="#" className="btn monitor-btn monitor-btn-ghost" style={{
+                                            <Link href="/dashboard/alerts" className="btn monitor-btn monitor-btn-ghost" style={{
                                                 padding: "0.75rem 1.75rem",
                                                 borderRadius: "6px"
                                             }}>
@@ -124,6 +123,8 @@ export default function DesignPreviewPage() {
                     </ul>
                 </section>
             </div>
-        </DashboardShell>
+        </>
     );
 }
+
+

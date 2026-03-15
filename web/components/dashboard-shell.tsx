@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { PropsWithChildren, useEffect, useState } from "react";
+import { PropsWithChildren, useEffect } from "react";
 import { useAuth } from "@/components/auth-provider";
 import {
   LayoutDashboard,
@@ -13,10 +13,9 @@ import {
   FileText,
   Settings,
   PlusCircle,
-  LogOut,
+  Users,
   ChevronRight
 } from "lucide-react";
-import { StatusPill } from "@/components/status-pill";
 
 const NAV = [
   { href: "/dashboard", label: "ダッシュボード", icon: LayoutDashboard },
@@ -24,26 +23,22 @@ const NAV = [
   { href: "/dashboard/alerts", label: "検出アラート", icon: Bell },
   { href: "/dashboard/history", label: "変更履歴", icon: History },
   { href: "/dashboard/ai-reports", label: "AI解析レポート", icon: BarChart3 },
+  { href: "/dashboard/customers", label: "顧客管理", icon: Users },
   { href: "/dashboard/reports", label: "レポート出力", icon: FileText },
   { href: "/dashboard/settings", label: "設定", icon: Settings },
 ] as const;
 
 export function DashboardShell({ children }: PropsWithChildren) {
-  const { user, loading, authError, signOutUser, apiFetch } = useAuth();
-  const [displayName, setDisplayName] = useState<string | null>(null);
+  const { user, loading, authError } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const allowLocalDashboardBypass = process.env.NEXT_PUBLIC_LOCAL_DASHBOARD_BYPASS === "1";
+  const showDashboardContent = !loading && (Boolean(user) || allowLocalDashboardBypass);
+  const showBlockingOverlay = loading || (!user && !allowLocalDashboardBypass);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/");
-  }, [loading, router, user]);
-
-  useEffect(() => {
-    if (!user) return;
-    apiFetch("/api/me").then(res => res.ok ? res.json() : null).then(data => {
-      if (data?.displayName) setDisplayName(data.displayName);
-    }).catch(() => { });
-  }, [user, apiFetch]);
+    if (!loading && !user && !allowLocalDashboardBypass) router.replace("/");
+  }, [allowLocalDashboardBypass, loading, router, user]);
 
   return (
     <div className="dashboard-layout" style={{ position: "relative" }}>
@@ -85,22 +80,6 @@ export function DashboardShell({ children }: PropsWithChildren) {
               <PlusCircle size={15} />
               サイトを追加
             </Link>
-            <div className="sidebar-account">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "0.625rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#10b981" }}>LIVE</span>
-                <StatusPill status="healthy" />
-              </div>
-              <p className="sidebar-account-email" style={{ marginTop: "0.25rem", color: "var(--text)" }}>{displayName || user?.displayName || "読み込み中..."}</p>
-              <p className="sidebar-account-email" style={{ marginTop: "0.1rem", fontSize: "0.65rem", color: "var(--text-3)" }}>{user?.email}</p>
-            </div>
-            <button
-              className="btn btn-ghost btn-xs"
-              style={{ width: "100%", color: "rgba(255,255,255,0.35)", borderColor: "rgba(255,255,255,0.06)" }}
-              onClick={() => { if (user) void signOutUser() }}
-            >
-              <LogOut size={13} />
-              ログアウト
-            </button>
           </div>
         </div>
       </aside>
@@ -108,10 +87,10 @@ export function DashboardShell({ children }: PropsWithChildren) {
       {/* ─── Main ─── */}
       <div className="dashboard-content">
         {/* Page content */}
-        {(!loading && user) && children}
+        {showDashboardContent && children}
 
         {/* Loading Overlay */}
-        {(loading || !user) && (
+        {showBlockingOverlay && (
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 100,
             display: "grid", placeItems: "center",

@@ -25,12 +25,29 @@ function isLocalTestUser(email?: string | null): boolean {
   );
 }
 
+function defaultSettings(): NonNullable<UserDoc["settings"]> {
+  return {
+    monitoring: {
+      interval: "24h",
+      algorithm: "dom",
+      sslMonitoringEnabled: true,
+      domainMonitoringEnabled: true,
+      alertOn30Days: false,
+      alertOn7Days: true,
+      alertOnExpiry: true,
+      customHeaders: "",
+      userAgent: "MihariBot/2.0"
+    },
+    notifications: { emailEnabled: true, slackEnabled: false, notifyOn: "errors" },
+    ai: { autoAnalyze: true, scope: "full" }
+  };
+}
+
 function withLocalUnlimitedPlan(user: UserDoc): UserDoc {
   if (!isLocalTestUser(user.email)) {
     return user;
   }
 
-  // Local testing only: remove plan-based caps and feature restrictions.
   return { ...user, plan: "enterprise" };
 }
 
@@ -41,10 +58,38 @@ export async function getOrCreateUser(decoded: DecodedIdToken): Promise<UserDoc>
   if (snapshot.exists) {
     const user = snapshot.data() as UserDoc;
     const normalizedPlan = normalizePlanName(user.plan);
+    const settings = {
+      ...defaultSettings(),
+      ...(user.settings ?? {}),
+      monitoring: {
+        ...defaultSettings().monitoring,
+        ...(user.settings?.monitoring ?? {})
+      },
+      notifications: {
+        ...defaultSettings().notifications,
+        ...(user.settings?.notifications ?? {})
+      },
+      ai: {
+        ...defaultSettings().ai,
+        ...(user.settings?.ai ?? {})
+      }
+    };
+
+    const updates: Partial<UserDoc> = {};
     if (user.plan !== normalizedPlan) {
       user.plan = normalizedPlan;
-      await userRef.update({ plan: normalizedPlan });
+      updates.plan = normalizedPlan;
     }
+
+    if (JSON.stringify(user.settings ?? null) !== JSON.stringify(settings)) {
+      user.settings = settings;
+      updates.settings = settings;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await userRef.update(updates);
+    }
+
     return withLocalUnlimitedPlan(user);
   }
 
@@ -52,6 +97,7 @@ export async function getOrCreateUser(decoded: DecodedIdToken): Promise<UserDoc>
     userId: decoded.uid,
     email: decoded.email ?? "",
     plan: "starter",
+    settings: defaultSettings(),
     createdAt: nowIso()
   };
   await userRef.set(user);

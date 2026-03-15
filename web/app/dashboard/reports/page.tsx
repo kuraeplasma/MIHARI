@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardShell } from "@/components/dashboard-shell";
 import { useAuth } from "@/components/auth-provider";
 import { FileText, Download, Calendar, Globe, Filter, CheckCircle, ChevronRight } from "lucide-react";
 import { SiteDoc } from "@/types/domain";
@@ -23,6 +22,7 @@ export default function ReportsPage() {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [done, setDone] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [format, setFormat] = useState<ReportFormat>("pdf");
     const [period, setPeriod] = useState<ReportPeriod>("30");
@@ -40,13 +40,8 @@ export default function ReportsPage() {
                 setSites(payload.sites);
                 setSelectedSites(payload.sites.map(s => s.siteId));
             } catch {
-                // mock data fallback
-                setSites([
-                    { siteId: "1", url: "https://example.com", healthScore: 98 } as SiteDoc,
-                    { siteId: "2", url: "https://shop.client-a.jp", healthScore: 72 } as SiteDoc,
-                    { siteId: "3", url: "https://corp.example.co.jp", healthScore: 45 } as SiteDoc,
-                ]);
-                setSelectedSites(["1", "2", "3"]);
+                setSites([]);
+                setSelectedSites([]);
             } finally {
                 setLoading(false);
             }
@@ -61,16 +56,59 @@ export default function ReportsPage() {
     };
 
     const handleGenerate = async () => {
+        if (selectedSites.length === 0) return;
+
         setGenerating(true);
-        // Simulated generation delay
-        await new Promise(r => setTimeout(r, 2000));
-        setGenerating(false);
-        setDone(true);
-        setTimeout(() => setDone(false), 4000);
+        setError(null);
+        try {
+            const res = await apiFetch("/api/reports/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    format,
+                    periodDays: Number(period),
+                    siteIds: selectedSites,
+                    includeAi: includeAI,
+                    includeHistory
+                })
+            });
+
+            if (!res.ok) {
+                let message = "レポートの生成に失敗しました";
+                try {
+                    const payload = await res.json() as { error?: string };
+                    if (payload.error) message = payload.error;
+                } catch {
+                    // ignore JSON parse errors
+                }
+                throw new Error(message);
+            }
+
+            const blob = await res.blob();
+            const disposition = res.headers.get("content-disposition") ?? "";
+            const match = disposition.match(/filename=\"?([^\";]+)\"?/i);
+            const filename = match?.[1] ?? `mihari-report.${format}`;
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            setDone(true);
+            setTimeout(() => setDone(false), 4000);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "レポートの生成に失敗しました");
+        } finally {
+            setGenerating(false);
+        }
     };
 
     return (
-        <DashboardShell>
+        <>
             <div className="dashboard-main-padding">
                 {/* Header */}
                 <div style={{ marginBottom: "1rem" }}>
@@ -92,7 +130,7 @@ export default function ReportsPage() {
                                     <Calendar size={18} style={{ color: "var(--emerald)" }} />
                                     <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "var(--text)" }}>対象期間</h3>
                                 </div>
-                                <div className="history-tab-group" style={{ background: "#f3f4f6", padding: "3px", borderRadius: "10px" }}>
+                                <div className="history-tab-group">
                                     {([["7", "7日"], ["30", "30日"], ["90", "90日"]] as [ReportPeriod, string][]).map(([val, label]) => (
                                         <button
                                             key={val}
@@ -126,7 +164,7 @@ export default function ReportsPage() {
                                             textAlign: "left",
                                             cursor: "pointer",
                                             border: format === val ? "2px solid var(--emerald)" : "1px solid var(--border)",
-                                            background: format === val ? "var(--emerald-glass)" : "white",
+                                            background: format === val ? "var(--emerald-glass)" : "var(--card-surface)",
                                             transition: "all 0.2s var(--ease)",
                                             boxShadow: format === val ? "var(--shadow-sm)" : "none",
                                             position: "relative"
@@ -163,7 +201,7 @@ export default function ReportsPage() {
                                             borderRadius: "var(--r-md)",
                                             border: "1px solid var(--border)",
                                             cursor: "pointer",
-                                            background: "white"
+                                            background: "var(--card-surface)"
                                         }}
                                     >
                                         <input
@@ -256,7 +294,7 @@ export default function ReportsPage() {
                     {/* Preview / Generate Panel */}
                     <div style={{ position: "sticky", top: "calc(var(--header-h) + 2rem)" }}>
                         <div className="data-panel" style={{ overflow: "visible", boxShadow: "var(--shadow-lg)" }}>
-                            <div className="panel-header" style={{ background: "white", borderBottom: "1px solid var(--border)", borderTopLeftRadius: "var(--r-lg)", borderTopRightRadius: "var(--r-lg)" }}>
+                            <div className="panel-header" style={{ background: "var(--card-surface)", borderBottom: "1px solid var(--border)", borderTopLeftRadius: "var(--r-lg)", borderTopRightRadius: "var(--r-lg)" }}>
                                 <h3 className="panel-title" style={{ color: "var(--text)" }}>出力プレビュー</h3>
                                 <div className={`badge ${format === "pdf" ? "badge-ok" : "badge-neutral"}`} style={{ fontSize: "0.625rem" }}>
                                     {format.toUpperCase()}
@@ -313,6 +351,11 @@ export default function ReportsPage() {
                                         最低 1 つのサイトを選択してください
                                     </p>
                                 )}
+                                {error && (
+                                    <p style={{ fontSize: "0.75rem", color: "var(--danger)", textAlign: "center", fontWeight: 600 }}>
+                                        {error}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -322,6 +365,7 @@ export default function ReportsPage() {
                 @keyframes spin { to { transform: rotate(360deg); } }
                 .list-row:hover { background: var(--surface-2) !important; }
             `}</style>
-        </DashboardShell>
+        </>
     );
 }
+

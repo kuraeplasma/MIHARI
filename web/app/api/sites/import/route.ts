@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import Papa from "papaparse";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-guard";
 import { adminDb } from "@/lib/firebase-admin";
 import { triggerMonitoringDispatch } from "@/lib/monitoring";
 import { PLANS } from "@/lib/plans";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { nowIso } from "@/lib/time";
-import { normalizeUrl } from "@/lib/url";
+import { normalizeUrl, validateCrawlUrl } from "@/lib/url";
 import { getOrCreateUser } from "@/lib/users";
 import { SiteDoc } from "@/types/domain";
+import { resolveApiError } from "@/lib/server-error";
 
 export const runtime = "nodejs";
 
@@ -16,8 +18,9 @@ function extractUrlsFromCsv(csvText: string): string[] {
     skipEmptyLines: true
   });
 
-  if (parsed.errors.length > 0) {
-    throw new Error(parsed.errors[0].message);
+  const fatalError = parsed.errors.find((entry) => entry.code !== "UndetectableDelimiter");
+  if (fatalError) {
+    throw new Error(fatalError.message);
   }
 
   const candidates: string[] = [];
@@ -36,8 +39,18 @@ function extractUrlsFromCsv(csvText: string): string[] {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await enforceRateLimit(req, "api:sites-import:post");
+  if (limited) {
+    return limited;
+  }
+
+  const auth = await requireAuth(req);
+  if (auth.error) {
+    return auth.error;
+  }
+
   try {
-    const decoded = await requireAuth(req);
+    const decoded = auth.user;
     const user = await getOrCreateUser(decoded);
     const formData = await req.formData();
     const file = formData.get("file");
@@ -81,6 +94,11 @@ export async function POST(req: NextRequest) {
     for (const candidate of rawUrls) {
       try {
         const url = normalizeUrl(candidate);
+        const isSafe = await validateCrawlUrl(url);
+        if (!isSafe) {
+          rejected.push({ input: candidate, reason: "unsafe_url" });
+          continue;
+        }
         if (existingUrls.has(url) || normalized.includes(url)) {
           rejected.push({ input: candidate, reason: "duplicate" });
           continue;
@@ -113,6 +131,12 @@ export async function POST(req: NextRequest) {
         lastCheckedAt: null,
         nextCheckAt: now,
         formMonitorEnabled: plan.formMonitoring,
+        ssl_expiry_days: null,
+        ssl_expiry_date: null,
+        ssl_checked_at: null,
+        domain_expiry_days: null,
+        domain_expiry_date: null,
+        domain_checked_at: null,
         createdAt: now
       };
       created.push(site);
@@ -126,9 +150,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ created, rejected }, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "CSV import failed" },
-      { status: 400 }
-    );
+    const resolved = resolveApiError(error, "CSV import failed");
+    return NextResponse.json({ error: resolved.message }, { status: resolved.status });
   }
 }

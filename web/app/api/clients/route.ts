@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-guard";
 import { adminDb } from "@/lib/firebase-admin";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { nowIso } from "@/lib/time";
 import { ClientDoc, SiteDoc } from "@/types/domain";
 
@@ -12,8 +13,18 @@ const createClientSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  const limited = await enforceRateLimit(req, "api:clients:get");
+  if (limited) {
+    return limited;
+  }
+
+  const auth = await requireAuth(req);
+  if (auth.error) {
+    return auth.error;
+  }
+
   try {
-    const decoded = await requireAuth(req);
+    const decoded = auth.user;
 
     const [clientsSnap, sitesSnap] = await Promise.all([
       adminDb.collection("clients").where("userId", "==", decoded.uid).orderBy("createdAt", "desc").get(),
@@ -50,8 +61,18 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await enforceRateLimit(req, "api:clients:post");
+  if (limited) {
+    return limited;
+  }
+
+  const auth = await requireAuth(req);
+  if (auth.error) {
+    return auth.error;
+  }
+
   try {
-    const decoded = await requireAuth(req);
+    const decoded = auth.user;
     const payload = createClientSchema.parse(await req.json());
 
     const existing = await adminDb
