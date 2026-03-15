@@ -15,5 +15,10 @@
     "build:dispatcher": "npm --prefix services/dispatcher run build",
     "build:worker": "npm --prefix services/worker run build",
     "build:lp": "node scripts/build-lp.cjs"
+  },
+  "dependencies": {
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }
