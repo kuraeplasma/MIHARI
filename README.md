@@ -140,3 +140,40 @@ Not included:
 - auto-repair
 - public ranking
 - competitor monitoring
+
+## Netlify (Two Sites)
+
+Deploy LP and app as separate Netlify sites from the same repository.
+
+### LP site (`mihari.space`)
+
+- Config file: `netlify.toml` (repo root)
+- Base directory: *(empty)*
+- Build command: `node scripts/build-lp.cjs`
+- Publish directory: `dist/lp`
+
+LP build copies only required landing files into `dist/lp` to avoid exposing repository files.
+
+### App site (`app.mihari.space`)
+
+- Config file: `web/netlify.toml`
+- Base directory: `web`
+- Build command: `npm run build`
+- Publish directory: `.next`
+
+The app site requires all runtime environment variables for Firebase, Stripe, Resend, Upstash, and dispatcher URL.
+
+### Stripe webhook (production)
+
+Set webhook endpoint URL to:
+
+```text
+https://app.mihari.space/api/webhooks/stripe
+```
+
+Enable events:
+
+- `checkout.session.completed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_failed`

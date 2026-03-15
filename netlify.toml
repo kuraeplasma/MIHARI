@@ -1,0 +1,3 @@
+[build]
+  command = "node scripts/build-lp.cjs"
+  publish = "dist/lp"

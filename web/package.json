@@ -10,12 +10,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@netlify/plugin-nextjs": "^5.15.9",
+    "@stripe/stripe-js": "^8.9.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "firebase": "^11.7.0",
     "firebase-admin": "^13.4.0",
+    "ipaddr.js": "^1.9.1",
+    "lucide-react": "^0.577.0",
     "next": "^14.2.5",
     "papaparse": "^5.5.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "resend": "^6.9.3",
+    "stripe": "^20.4.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
