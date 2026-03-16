@@ -10,7 +10,7 @@ import {
   useState
 } from "react";
 import { User, onIdTokenChanged, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
-import { getFirebaseClient } from "@/lib/firebase-client";
+import { extractMissingAuthConfigKeys, getFirebaseClient } from "@/lib/firebase-client";
 
 interface AuthContextValue {
   user: User | null;
@@ -112,8 +112,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
       );
     } catch (error) {
-      if (error instanceof Error && error.message === "AUTH_CONFIG_MISSING") {
-        setAuthError("Firebase認証の設定が不足しています。管理者に環境変数設定を確認してください。");
+      if (error instanceof Error && error.message.startsWith("AUTH_CONFIG_MISSING")) {
+        const missingKeys = extractMissingAuthConfigKeys(error.message);
+        if (missingKeys.length > 0) {
+          setAuthError(`Firebase認証の設定が不足しています。不足キー: ${missingKeys.join(", ")}`);
+        } else {
+          setAuthError("Firebase認証の設定が不足しています。管理者に環境変数設定を確認してください。");
+        }
       } else {
         setAuthError(normalizeAuthErrorMessage(error, "Firebase client setup failed."));
       }

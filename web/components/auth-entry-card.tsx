@@ -10,7 +10,7 @@ import {
 } from "firebase/auth";
 import { useAuth } from "@/components/auth-provider";
 import { useAppPopup } from "@/components/app-popup-provider";
-import { getFirebaseClient } from "@/lib/firebase-client";
+import { extractMissingAuthConfigKeys, getFirebaseClient } from "@/lib/firebase-client";
 
 type Mode = "login" | "register";
 
@@ -33,7 +33,13 @@ function mapAuthError(error: unknown): string {
   if (message.includes("auth/email-already-in-use")) return "このメールアドレスは既に使用されています。";
   if (message.includes("auth/weak-password")) return "パスワードは8文字以上で設定してください。";
   if (message.includes("auth/too-many-requests")) return "試行回数が多すぎます。しばらく待ってから再試行してください。";
-  if (message.includes("AUTH_CONFIG_MISSING")) return "認証設定が不足しています。管理者に環境設定を確認してください。";
+  if (message.includes("AUTH_CONFIG_MISSING")) {
+    const missingKeys = extractMissingAuthConfigKeys(message);
+    if (missingKeys.length > 0) {
+      return `認証設定が不足しています。不足キー: ${missingKeys.join(", ")}`;
+    }
+    return "認証設定が不足しています。管理者に環境設定を確認してください。";
+  }
 
   return message;
 }
@@ -221,6 +227,4 @@ export function AuthEntryCard({ mode }: { mode: Mode }) {
     </div>
   );
 }
-
-
 
