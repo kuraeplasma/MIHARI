@@ -12,11 +12,11 @@ interface IdentityToolkitLookupResponse {
 }
 
 function projectIdForFallback(): string {
-  return process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "";
+  return (process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "").trim();
 }
 
 async function verifyViaIdentityToolkit(idToken: string): Promise<DecodedIdToken> {
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "";
+  const apiKey = (process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "").trim();
   if (!apiKey) {
     throw new Error("Missing NEXT_PUBLIC_FIREBASE_API_KEY for fallback auth verification");
   }
