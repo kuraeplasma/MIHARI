@@ -69,11 +69,17 @@ export async function requireAuth(req: NextRequest): Promise<DecodedIdToken> {
 
   try {
     return await adminAuth.verifyIdToken(token);
-  } catch (error) {
-    const allowFallback = process.env.ALLOW_FIREBASE_REST_VERIFY === "1";
-    if (!allowFallback) {
-      throw error;
+  } catch (adminError) {
+    const hasApiKey = Boolean((process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "").trim());
+    if (!hasApiKey) {
+      throw adminError;
     }
-    return verifyViaIdentityToolkit(token);
+
+    try {
+      return await verifyViaIdentityToolkit(token);
+    } catch (fallbackError) {
+      // Preserve existing behavior for invalid/expired tokens when fallback cannot verify.
+      throw adminError ?? fallbackError;
+    }
   }
 }
